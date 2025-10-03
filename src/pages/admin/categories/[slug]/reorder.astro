@@ -1,0 +1,143 @@
+---
+import AdminLayout from '../../../../layouts/AdminLayout.astro';
+import { db } from '../../../../lib/db';
+import { categories, categoryImages } from '../../../../lib/db/schema';
+import { eq, asc } from 'drizzle-orm';
+
+const { slug } = Astro.params;
+
+// Get category
+const category = await db.select().from(categories).where(eq(categories.slug, slug!)).get();
+
+if (!category || category.isProjectCategory) {
+  return Astro.redirect('/admin/categories');
+}
+
+// Handle reorder
+if (Astro.request.method === 'POST') {
+  const formData = await Astro.request.formData();
+  const newOrder = JSON.parse(formData.get('order') as string) as number[];
+
+  for (let i = 0; i < newOrder.length; i++) {
+    await db
+      .update(categoryImages)
+      .set({ order: i })
+      .where(eq(categoryImages.id, newOrder[i]));
+  }
+
+  return Astro.redirect(`/admin/categories/${slug}`);
+}
+
+// Get images
+const images = await db
+  .select()
+  .from(categoryImages)
+  .where(eq(categoryImages.categoryId, category.id))
+  .orderBy(asc(categoryImages.order))
+  .all();
+---
+
+<AdminLayout title={`Ordenar - ${category.name}`}>
+  <div class="max-w-7xl">
+    <div class="mb-8">
+      <a href={`/admin/categories/${slug}`} class="text-gray-600 hover:text-gray-900 mb-4 inline-block">
+        ← Volver a {category.name}
+      </a>
+      <h1 class="text-3xl font-bold">Ordenar: {category.name}</h1>
+      <p class="text-gray-600 mt-2">Arrastra para reordenar las imágenes</p>
+    </div>
+
+    <div class="bg-white rounded-lg p-6 shadow-sm">
+      <form method="POST" id="reorder-form">
+        <input type="hidden" name="order" id="order-input" />
+
+        <div id="sortable-images" class="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-6">
+          {images.map((img) => (
+            <div data-id={img.id} class="cursor-move group relative">
+              <div class="aspect-square overflow-hidden rounded-lg">
+                <img
+                  src={img.imagePath}
+                  alt="Imagen"
+                  class="w-full h-full object-cover"
+                  draggable="false"
+                />
+              </div>
+              <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all rounded-lg flex items-center justify-center pointer-events-none">
+                <svg class="w-6 h-6 text-white opacity-0 group-hover:opacity-100" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16" />
+                </svg>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <button
+          type="submit"
+          class="bg-gray-900 text-white px-6 py-2 rounded-lg hover:bg-gray-800 transition-colors"
+        >
+          Guardar orden
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // Simple drag and drop
+    let draggedElement: HTMLElement | null = null;
+
+    const container = document.getElementById('sortable-images');
+    const items = container?.querySelectorAll('[data-id]');
+
+    items?.forEach(item => {
+      const htmlItem = item as HTMLElement;
+      htmlItem.draggable = true;
+
+      htmlItem.addEventListener('dragstart', (e) => {
+        draggedElement = htmlItem;
+        draggedElement.style.opacity = '0.5';
+        e.dataTransfer!.effectAllowed = 'move';
+      });
+
+      htmlItem.addEventListener('dragend', (e) => {
+        if (draggedElement) {
+          draggedElement.style.opacity = '1';
+          draggedElement = null;
+        }
+      });
+
+      htmlItem.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        e.dataTransfer!.dropEffect = 'move';
+      });
+
+      htmlItem.addEventListener('drop', (e) => {
+        e.preventDefault();
+        if (draggedElement && htmlItem !== draggedElement && container) {
+          const allItems = Array.from(container.children);
+          const draggedIndex = allItems.indexOf(draggedElement);
+          const targetIndex = allItems.indexOf(htmlItem);
+
+          if (draggedIndex < targetIndex) {
+            htmlItem.after(draggedElement);
+          } else {
+            htmlItem.before(draggedElement);
+          }
+        }
+      });
+    });
+
+    // Save order on submit
+    document.getElementById('reorder-form')?.addEventListener('submit', (e) => {
+      const container = document.getElementById('sortable-images');
+      const items = container?.querySelectorAll('[data-id]');
+      const order = Array.from(items || []).map(item =>
+        parseInt((item as HTMLElement).dataset.id || '0')
+      );
+
+      const input = document.getElementById('order-input') as HTMLInputElement;
+      if (input) {
+        input.value = JSON.stringify(order);
+      }
+    });
+  </script>
+</AdminLayout>

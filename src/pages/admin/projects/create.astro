@@ -1,0 +1,154 @@
+---
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { db } from '../../../lib/db';
+import { projects, categories } from '../../../lib/db/schema';
+import { uploadAndOptimizeImage } from '../../../lib/upload';
+import { eq, asc } from 'drizzle-orm';
+
+// Get project category
+const projectCategory = await db
+  .select()
+  .from(categories)
+  .where(eq(categories.isProjectCategory, true))
+  .get();
+
+if (!projectCategory) {
+  return Astro.redirect('/admin/projects');
+}
+
+let error = '';
+
+if (Astro.request.method === 'POST') {
+  try {
+    const formData = await Astro.request.formData();
+    const title = formData.get('title') as string;
+    const slug = formData.get('slug') as string;
+    const description = formData.get('description') as string;
+    const coverImage = formData.get('cover_image') as File;
+
+    if (!title || !slug) {
+      error = 'Título y slug son requeridos';
+    } else {
+      // Check if slug exists
+      const existing = await db.select().from(projects).where(eq(projects.slug, slug)).get();
+      if (existing) {
+        error = 'Ya existe un proyecto con ese slug';
+      } else {
+        // Get max order
+        const maxOrderResult = await db
+          .select({ maxOrder: projects.order })
+          .from(projects)
+          .orderBy(asc(projects.order))
+          .all();
+
+        const order = maxOrderResult.length > 0
+          ? Math.max(...maxOrderResult.map(r => r.maxOrder)) + 1
+          : 0;
+
+        let coverImagePath: string | null = null;
+
+        // Upload cover image if provided
+        if (coverImage && coverImage.size > 0) {
+          const result = await uploadAndOptimizeImage(coverImage, `projects/${slug}`);
+          coverImagePath = result.path;
+        }
+
+        // Create project
+        await db.insert(projects).values({
+          categoryId: projectCategory.id,
+          slug,
+          title,
+          description: description || null,
+          coverImagePath,
+          order,
+        });
+
+        return Astro.redirect(`/admin/projects/${slug}`);
+      }
+    }
+  } catch (e) {
+    error = `Error al crear proyecto: ${(e as Error).message}`;
+  }
+}
+---
+
+<AdminLayout title="Crear Proyecto - Admin">
+  <div class="max-w-3xl">
+    <div class="mb-8">
+      <a href="/admin/projects" class="text-gray-600 hover:text-gray-900 mb-4 inline-block">
+        ← Volver a proyectos
+      </a>
+      <h1 class="text-3xl font-bold">Crear nuevo proyecto</h1>
+    </div>
+
+    <div class="bg-white rounded-lg p-6 shadow-sm">
+      {error && (
+        <div class="mb-4 p-3 bg-red-50 text-red-800 rounded-lg">
+          {error}
+        </div>
+      )}
+
+      <form method="POST" enctype="multipart/form-data" class="space-y-6">
+        <div>
+          <label class="block text-sm font-medium mb-2">Título *</label>
+          <input
+            type="text"
+            name="title"
+            required
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent outline-none"
+            placeholder="Ej: Campaña L'Oréal 2024"
+          />
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium mb-2">Slug * (URL amigable)</label>
+          <input
+            type="text"
+            name="slug"
+            required
+            pattern="[a-z0-9-]+"
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent outline-none"
+            placeholder="Ej: campana-loreal-2024"
+          />
+          <p class="text-sm text-gray-500 mt-1">Solo minúsculas, números y guiones</p>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium mb-2">Descripción</label>
+          <textarea
+            name="description"
+            rows="4"
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent outline-none"
+            placeholder="Descripción breve del proyecto..."
+          ></textarea>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium mb-2">Imagen de portada</label>
+          <input
+            type="file"
+            name="cover_image"
+            accept="image/*"
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent outline-none"
+          />
+          <p class="text-sm text-gray-500 mt-1">Se optimizará automáticamente</p>
+        </div>
+
+        <div class="flex gap-4">
+          <button
+            type="submit"
+            class="bg-gray-900 text-white px-6 py-2 rounded-lg hover:bg-gray-800 transition-colors"
+          >
+            Crear proyecto
+          </button>
+          <a
+            href="/admin/projects"
+            class="border border-gray-300 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            Cancelar
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+</AdminLayout>

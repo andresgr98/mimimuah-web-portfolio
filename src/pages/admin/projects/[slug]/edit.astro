@@ -1,0 +1,211 @@
+---
+import AdminLayout from '../../../../layouts/AdminLayout.astro';
+import { db } from '../../../../lib/db';
+import { projects } from '../../../../lib/db/schema';
+import { uploadAndOptimizeImage } from '../../../../lib/upload';
+import { eq } from 'drizzle-orm';
+import { unlink } from 'fs/promises';
+import { join } from 'path';
+
+const { slug } = Astro.params;
+
+// Get project
+const project = await db.select().from(projects).where(eq(projects.slug, slug!)).get();
+
+if (!project) {
+  return Astro.redirect('/admin/projects');
+}
+
+let message = '';
+let error = '';
+
+if (Astro.request.method === 'POST') {
+  try {
+    const formData = await Astro.request.formData();
+    const action = formData.get('action') as string;
+
+    if (action === 'delete') {
+      // Delete cover image if exists
+      if (project.coverImagePath) {
+        const filepath = join(process.cwd(), 'public', project.coverImagePath);
+        try {
+          await unlink(filepath);
+        } catch (e) {
+          console.error('Error deleting cover image:', e);
+        }
+      }
+
+      // Delete project
+      await db.delete(projects).where(eq(projects.id, project.id));
+      return Astro.redirect('/admin/projects');
+    } else {
+      // Update project
+      const title = formData.get('title') as string;
+      const newSlug = formData.get('slug') as string;
+      const description = formData.get('description') as string;
+      const coverImage = formData.get('cover_image') as File;
+
+      if (!title || !newSlug) {
+        error = 'Título y slug son requeridos';
+      } else {
+        // Check if slug changed and exists
+        if (newSlug !== slug) {
+          const existing = await db.select().from(projects).where(eq(projects.slug, newSlug)).get();
+          if (existing) {
+            error = 'Ya existe un proyecto con ese slug';
+          }
+        }
+
+        if (!error) {
+          let coverImagePath = project.coverImagePath;
+
+          // Upload new cover image if provided
+          if (coverImage && coverImage.size > 0) {
+            // Delete old cover image
+            if (coverImagePath) {
+              const filepath = join(process.cwd(), 'public', coverImagePath);
+              try {
+                await unlink(filepath);
+              } catch (e) {
+                console.error('Error deleting old cover image:', e);
+              }
+            }
+
+            const result = await uploadAndOptimizeImage(coverImage, `projects/${newSlug}`);
+            coverImagePath = result.path;
+          }
+
+          // Update project
+          await db
+            .update(projects)
+            .set({
+              slug: newSlug,
+              title,
+              description: description || null,
+              coverImagePath,
+            })
+            .where(eq(projects.id, project.id));
+
+          message = 'Proyecto actualizado correctamente';
+
+          if (newSlug !== slug) {
+            return Astro.redirect(`/admin/projects/${newSlug}/edit`);
+          }
+        }
+      }
+    }
+  } catch (e) {
+    error = `Error al actualizar proyecto: ${(e as Error).message}`;
+  }
+}
+---
+
+<AdminLayout title={`Editar ${project.title} - Admin`}>
+  <div class="max-w-3xl">
+    <div class="mb-8">
+      <a href="/admin/projects" class="text-gray-600 hover:text-gray-900 mb-4 inline-block">
+        ← Volver a proyectos
+      </a>
+      <h1 class="text-3xl font-bold">Editar proyecto</h1>
+    </div>
+
+    <div class="bg-white rounded-lg p-6 shadow-sm">
+      {message && (
+        <div class="mb-4 p-3 bg-green-50 text-green-800 rounded-lg">
+          {message}
+        </div>
+      )}
+
+      {error && (
+        <div class="mb-4 p-3 bg-red-50 text-red-800 rounded-lg">
+          {error}
+        </div>
+      )}
+
+      <form method="POST" enctype="multipart/form-data" class="space-y-6">
+        <div>
+          <label class="block text-sm font-medium mb-2">Título *</label>
+          <input
+            type="text"
+            name="title"
+            value={project.title}
+            required
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent outline-none"
+          />
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium mb-2">Slug * (URL amigable)</label>
+          <input
+            type="text"
+            name="slug"
+            value={project.slug}
+            required
+            pattern="[a-z0-9-]+"
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent outline-none"
+          />
+          <p class="text-sm text-gray-500 mt-1">Solo minúsculas, números y guiones</p>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium mb-2">Descripción</label>
+          <textarea
+            name="description"
+            rows="4"
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent outline-none"
+          >{project.description || ''}</textarea>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium mb-2">Imagen de portada</label>
+          {project.coverImagePath && (
+            <div class="mb-2">
+              <img src={project.coverImagePath} alt="Portada actual" class="w-48 h-32 object-cover rounded-lg" />
+              <p class="text-sm text-gray-500 mt-1">Portada actual</p>
+            </div>
+          )}
+          <input
+            type="file"
+            name="cover_image"
+            accept="image/*"
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent outline-none"
+          />
+          <p class="text-sm text-gray-500 mt-1">Subir nueva imagen para reemplazar la actual</p>
+        </div>
+
+        <div class="flex gap-4">
+          <button
+            type="submit"
+            name="action"
+            value="update"
+            class="bg-gray-900 text-white px-6 py-2 rounded-lg hover:bg-gray-800 transition-colors"
+          >
+            Guardar cambios
+          </button>
+          <a
+            href={`/admin/projects/${slug}`}
+            class="border border-gray-300 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            Cancelar
+          </a>
+        </div>
+      </form>
+
+      <!-- Delete section -->
+      <div class="mt-8 pt-8 border-t border-gray-200">
+        <h3 class="text-lg font-semibold text-red-600 mb-2">Zona de peligro</h3>
+        <p class="text-sm text-gray-600 mb-4">Esta acción eliminará permanentemente el proyecto y todas sus imágenes.</p>
+        <form method="POST" onsubmit="return confirm('¿Estás seguro? Esta acción no se puede deshacer.');">
+          <button
+            type="submit"
+            name="action"
+            value="delete"
+            class="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 transition-colors"
+          >
+            Eliminar proyecto
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</AdminLayout>

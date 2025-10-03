@@ -11,12 +11,12 @@ const allCategories = await db.select().from(categories).orderBy(asc(categories.
 
 <nav class="fixed top-0 w-full bg-white/95 backdrop-blur-sm z-50 border-b border-gray-100">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <div class="flex justify-between items-center h-16">
-      <a href="/" class="text-xl font-semibold text-gray-900">
-        Portfolio
+    <div class="flex justify-between md:justify-center items-center h-16 relative">
+      <a href="/" class="text-xl font-semibold text-gray-900 md:absolute md:left-1/2 md:-translate-x-1/2">
+        MIMI GÓMEZ MUAH
       </a>
 
-      <div class="hidden md:flex space-x-8">
+      <div class="hidden md:flex space-x-8 md:absolute md:right-0">
         <a
           href="/"
           class:list={[
@@ -122,15 +122,29 @@ const allCategories = await db.select().from(categories).orderBy(asc(categories.
     mobilePortfolioMenu?.classList.toggle('hidden');
   });
 
-  // Desktop dropdown hover
+  // Desktop dropdown hover - with delay to prevent flickering
   const dropdown = document.querySelector('.portfolio-dropdown');
   const dropdownMenu = dropdown?.querySelector('.portfolio-menu');
+  let hideTimeout: ReturnType<typeof setTimeout>;
 
   dropdown?.addEventListener('mouseenter', () => {
+    clearTimeout(hideTimeout);
     dropdownMenu?.classList.remove('hidden');
   });
 
   dropdown?.addEventListener('mouseleave', () => {
-    dropdownMenu?.classList.add('hidden');
+    hideTimeout = setTimeout(() => {
+      dropdownMenu?.classList.add('hidden');
+    }, 100);
+  });
+
+  dropdownMenu?.addEventListener('mouseenter', () => {
+    clearTimeout(hideTimeout);
+  });
+
+  dropdownMenu?.addEventListener('mouseleave', () => {
+    hideTimeout = setTimeout(() => {
+      dropdownMenu?.classList.add('hidden');
+    }, 100);
   });
 </script>

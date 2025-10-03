@@ -1,0 +1,169 @@
+---
+import AdminLayout from '../../../../layouts/AdminLayout.astro';
+import { db } from '../../../../lib/db';
+import { projects, projectImages } from '../../../../lib/db/schema';
+import { uploadAndOptimizeImage } from '../../../../lib/upload';
+import { eq, asc } from 'drizzle-orm';
+
+const { slug } = Astro.params;
+
+// Get project
+const project = await db.select().from(projects).where(eq(projects.slug, slug!)).get();
+
+if (!project) {
+  return Astro.redirect('/admin/projects');
+}
+
+let message = '';
+let error = '';
+
+// Handle upload
+if (Astro.request.method === 'POST') {
+  try {
+    const formData = await Astro.request.formData();
+    const files = formData.getAll('images') as File[];
+
+    if (files.length === 0) {
+      error = 'Selecciona al menos una imagen';
+    } else {
+      // Get current max order
+      const maxOrderResult = await db
+        .select({ maxOrder: projectImages.order })
+        .from(projectImages)
+        .where(eq(projectImages.projectId, project.id))
+        .orderBy(asc(projectImages.order))
+        .all();
+
+      let currentOrder = maxOrderResult.length > 0
+        ? Math.max(...maxOrderResult.map(r => r.maxOrder)) + 1
+        : 0;
+
+      for (const file of files) {
+        if (file.size > 0) {
+          const result = await uploadAndOptimizeImage(file, `projects/${project.slug}`);
+
+          await db.insert(projectImages).values({
+            projectId: project.id,
+            imagePath: result.path,
+            order: currentOrder++,
+          });
+        }
+      }
+
+      message = `${files.length} imagen(es) subida(s) correctamente`;
+    }
+  } catch (e) {
+    error = `Error al subir imágenes: ${(e as Error).message}`;
+  }
+}
+
+// Get images
+const images = await db
+  .select()
+  .from(projectImages)
+  .where(eq(projectImages.projectId, project.id))
+  .orderBy(asc(projectImages.order))
+  .all();
+---
+
+<AdminLayout title={`${project.title} - Admin`}>
+  <div class="max-w-7xl">
+    <div class="mb-8">
+      <a href="/admin/projects" class="text-gray-600 hover:text-gray-900 mb-4 inline-block">
+        ← Volver a proyectos
+      </a>
+      <div class="flex items-center justify-between">
+        <div>
+          <h1 class="text-3xl font-bold">{project.title}</h1>
+          {project.description && (
+            <p class="text-gray-600 mt-2">{project.description}</p>
+          )}
+          <p class="text-gray-500 text-sm mt-1">{images.length} imagen(es)</p>
+        </div>
+        <a
+          href={`/admin/projects/${slug}/edit`}
+          class="border border-gray-300 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-50 transition-colors"
+        >
+          Editar proyecto
+        </a>
+      </div>
+    </div>
+
+    <!-- Upload form -->
+    <div class="bg-white rounded-lg p-6 shadow-sm mb-8">
+      <h2 class="text-xl font-semibold mb-4">Subir nuevas imágenes</h2>
+
+      {message && (
+        <div class="mb-4 p-3 bg-green-50 text-green-800 rounded-lg">
+          {message}
+        </div>
+      )}
+
+      {error && (
+        <div class="mb-4 p-3 bg-red-50 text-red-800 rounded-lg">
+          {error}
+        </div>
+      )}
+
+      <form method="POST" enctype="multipart/form-data" class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium mb-2">Imágenes (múltiples)</label>
+          <input
+            type="file"
+            name="images"
+            accept="image/*"
+            multiple
+            required
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent outline-none"
+          />
+          <p class="text-sm text-gray-500 mt-1">Se optimizarán automáticamente</p>
+        </div>
+
+        <button
+          type="submit"
+          class="bg-gray-900 text-white px-6 py-2 rounded-lg hover:bg-gray-800 transition-colors"
+        >
+          Subir imágenes
+        </button>
+      </form>
+    </div>
+
+    <!-- Existing images -->
+    {images.length > 0 && (
+      <div class="bg-white rounded-lg p-6 shadow-sm">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-xl font-semibold">Imágenes existentes</h2>
+          <a
+            href={`/admin/projects/${slug}/reorder`}
+            class="text-sm text-gray-600 hover:text-gray-900"
+          >
+            Gestionar orden →
+          </a>
+        </div>
+
+        <div class="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-4">
+          {images.map((img) => (
+            <div class="relative group">
+              <img
+                src={img.imagePath}
+                alt="Imagen"
+                class="w-full aspect-square object-cover rounded-lg"
+              />
+              <form method="POST" action={`/admin/projects/delete?id=${img.id}&slug=${slug}`} class="absolute top-1 right-1">
+                <button
+                  type="submit"
+                  class="bg-red-600 text-white p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                  onclick="return confirm('¿Eliminar esta imagen?')"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </form>
+            </div>
+          ))}
+        </div>
+      </div>
+    )}
+  </div>
+</AdminLayout>

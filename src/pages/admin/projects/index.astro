@@ -1,0 +1,96 @@
+---
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { db } from '../../../lib/db';
+import { projects, projectImages, categories } from '../../../lib/db/schema';
+import { eq } from 'drizzle-orm';
+
+// Get project category
+const projectCategory = await db
+  .select()
+  .from(categories)
+  .where(eq(categories.isProjectCategory, true))
+  .get();
+
+// Get all projects
+const allProjects = await db
+  .select()
+  .from(projects)
+  .all();
+
+// Get image counts for each project and sort by order
+const projectsWithCounts = (await Promise.all(
+  allProjects.map(async (project) => {
+    const images = await db
+      .select()
+      .from(projectImages)
+      .where(eq(projectImages.projectId, project.id))
+      .all();
+
+    return {
+      ...project,
+      imageCount: images.length,
+    };
+  })
+)).sort((a, b) => a.order - b.order);
+---
+
+<AdminLayout title="Proyectos - Admin">
+  <div class="max-w-7xl">
+    <div class="flex items-center justify-between mb-8">
+      <h1 class="text-3xl font-bold">Proyectos</h1>
+      <a
+        href="/admin/projects/create"
+        class="bg-gray-900 text-white px-6 py-2 rounded-lg hover:bg-gray-800 transition-colors"
+      >
+        + Nuevo proyecto
+      </a>
+    </div>
+
+    {projectsWithCounts.length === 0 ? (
+      <div class="bg-white rounded-lg p-12 shadow-sm text-center">
+        <p class="text-gray-500 mb-4">No hay proyectos todavía</p>
+        <a
+          href="/admin/projects/create"
+          class="inline-block bg-gray-900 text-white px-6 py-2 rounded-lg hover:bg-gray-800 transition-colors"
+        >
+          Crear primer proyecto
+        </a>
+      </div>
+    ) : (
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {projectsWithCounts.map(project => (
+          <div class="bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+            {project.coverImagePath && (
+              <img
+                src={project.coverImagePath}
+                alt={project.title}
+                class="w-full h-48 object-cover"
+              />
+            )}
+            <div class="p-6">
+              <h3 class="text-xl font-semibold mb-2">{project.title}</h3>
+              {project.description && (
+                <p class="text-gray-600 text-sm mb-4 line-clamp-2">{project.description}</p>
+              )}
+              <p class="text-gray-500 text-sm mb-4">{project.imageCount} imagen(es)</p>
+              <div class="flex gap-2">
+                <a
+                  href={`/admin/projects/${project.slug}`}
+                  class="flex-1 text-center bg-gray-100 text-gray-900 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors"
+                >
+                  Gestionar
+                </a>
+                <a
+                  href={`/admin/projects/${project.slug}/edit`}
+                  class="flex-1 text-center border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Editar
+                </a>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    )}
+  </div>
+</AdminLayout>

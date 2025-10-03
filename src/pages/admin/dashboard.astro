@@ -1,10 +1,63 @@
 ---
-import Layout from '../../layouts/Layout.astro';
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import { db } from '../../lib/db';
+import { categories, projects, categoryImages } from '../../lib/db/schema';
+import { count } from 'drizzle-orm';
+
+// Get stats
+const [categoriesCount] = await db.select({ count: count() }).from(categories);
+const [projectsCount] = await db.select({ count: count() }).from(projects);
+const [imagesCount] = await db.select({ count: count() }).from(categoryImages);
 ---
 
-<Layout title="Dashboard - Admin">
-  <main class="min-h-screen p-4">
-    <h1 class="text-3xl font-bold mb-8">Dashboard Admin</h1>
-    <p class="text-gray-600">Panel de administración próximamente...</p>
-  </main>
-</Layout>
+<AdminLayout title="Dashboard - Admin">
+  <h1 class="text-3xl font-bold mb-8">Dashboard</h1>
+
+  <!-- Stats -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    <div class="bg-white rounded-lg p-6 shadow-sm">
+      <div class="text-gray-600 text-sm mb-1">Categorías</div>
+      <div class="text-3xl font-bold">{categoriesCount.count}</div>
+    </div>
+
+    <div class="bg-white rounded-lg p-6 shadow-sm">
+      <div class="text-gray-600 text-sm mb-1">Proyectos</div>
+      <div class="text-3xl font-bold">{projectsCount.count}</div>
+    </div>
+
+    <div class="bg-white rounded-lg p-6 shadow-sm">
+      <div class="text-gray-600 text-sm mb-1">Imágenes</div>
+      <div class="text-3xl font-bold">{imagesCount.count}</div>
+    </div>
+  </div>
+
+  <!-- Quick actions -->
+  <div class="bg-white rounded-lg p-6 shadow-sm">
+    <h2 class="text-xl font-semibold mb-4">Acciones rápidas</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <a
+        href="/admin/categories/new"
+        class="p-4 border border-gray-200 rounded-lg hover:border-gray-900 transition-colors"
+      >
+        <h3 class="font-medium mb-1">Nueva categoría</h3>
+        <p class="text-sm text-gray-600">Crear una nueva categoría</p>
+      </a>
+
+      <a
+        href="/admin/projects/new"
+        class="p-4 border border-gray-200 rounded-lg hover:border-gray-900 transition-colors"
+      >
+        <h3 class="font-medium mb-1">Nuevo proyecto</h3>
+        <p class="text-sm text-gray-600">Crear un nuevo proyecto</p>
+      </a>
+
+      <a
+        href="/admin/images"
+        class="p-4 border border-gray-200 rounded-lg hover:border-gray-900 transition-colors"
+      >
+        <h3 class="font-medium mb-1">Subir imágenes</h3>
+        <p class="text-sm text-gray-600">Gestionar imágenes</p>
+      </a>
+    </div>
+  </div>
+</AdminLayout>
