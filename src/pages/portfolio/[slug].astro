@@ -1,0 +1,62 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { db } from '../../lib/db';
+import { categories, categoryImages } from '../../lib/db/schema';
+import { eq, asc } from 'drizzle-orm';
+
+const { slug } = Astro.params;
+
+// Get category
+const category = await db.select().from(categories).where(eq(categories.slug, slug!)).get();
+
+if (!category) {
+  return Astro.redirect('/404');
+}
+
+// Redirect to /proyectos if it's the project category
+if (category.isProjectCategory) {
+  return Astro.redirect('/proyectos');
+}
+
+// Get images for this category
+const images = await db
+  .select()
+  .from(categoryImages)
+  .where(eq(categoryImages.categoryId, category.id))
+  .orderBy(asc(categoryImages.order));
+---
+
+<Layout title={`${category.name} - Portfolio`}>
+  <main class="pt-24 pb-16 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-7xl mx-auto">
+      <!-- Category Header -->
+      <div class="mb-12">
+        <h1 class="text-4xl sm:text-5xl font-bold text-gray-900 mb-4">
+          {category.name}
+        </h1>
+      </div>
+
+      <!-- Image Grid -->
+      {images.length > 0 ? (
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {images.map((image) => (
+            <div class="aspect-[3/4] overflow-hidden rounded-lg bg-gray-200">
+              <img
+                src={image.imagePath}
+                alt={`${category.name} - Imagen ${image.order + 1}`}
+                class="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                loading="lazy"
+              />
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div class="text-center py-20">
+          <p class="text-gray-500 text-lg">
+            Próximamente: imágenes de {category.name}
+          </p>
+        </div>
+      )}
+    </div>
+  </main>
+</Layout>

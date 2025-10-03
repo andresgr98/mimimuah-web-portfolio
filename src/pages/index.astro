@@ -1,0 +1,149 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="Portfolio - Maquillaje Profesional">
+  <!-- Profile Hero Section -->
+  <section class="pt-16 pb-0 relative">
+    <!-- Profile Photo with fade -->
+    <div class="relative w-full max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="aspect-[3/4] sm:aspect-[4/5] overflow-hidden">
+        <img
+          src="/images/about/profile-picture.jpeg"
+          alt="Foto de perfil"
+          class="w-full h-full object-cover"
+        />
+      </div>
+      <!-- Gradient fade to white -->
+      <div class="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-white to-transparent"></div>
+    </div>
+
+    <!-- Content over fade -->
+    <div class="relative -mt-16 px-4 sm:px-6 lg:px-8 pb-16">
+      <div class="max-w-4xl mx-auto">
+        <!-- Name & Title -->
+        <div class="text-center mb-8">
+          <h1 class="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-3">
+            Mimi Gómez
+          </h1>
+          <p class="text-xl sm:text-2xl text-gray-600 font-light">
+            Maquilladora Profesional
+          </p>
+        </div>
+
+        <!-- Bio -->
+        <div class="text-center mb-10">
+          <p class="text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed">
+            Especializada en maquillaje de novias, eventos y sesiones fotográficas.
+            Mi objetivo es realzar la belleza natural de cada persona, creando looks
+            que reflejen su personalidad y la hagan sentir segura y radiante.
+          </p>
+        </div>
+
+        <!-- CTA Buttons -->
+        <div class="flex flex-col sm:flex-row gap-4 justify-center">
+          <a
+            href="/proyectos"
+            class="inline-block bg-gray-900 text-white px-8 py-4 rounded-lg font-medium hover:bg-gray-800 transition-colors text-center"
+          >
+            Ver portfolio
+          </a>
+          <a
+            href="#contacto"
+            class="inline-block border-2 border-gray-900 text-gray-900 px-8 py-4 rounded-lg font-medium hover:bg-gray-50 transition-colors text-center"
+          >
+            Contactar
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Services Section -->
+  <section class="py-16 px-4 sm:px-6 lg:px-8 bg-gray-50">
+    <div class="max-w-7xl mx-auto">
+      <h2 class="text-3xl sm:text-4xl font-bold text-center text-gray-900 mb-12">
+        Servicios especializados
+      </h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div class="bg-white p-6 rounded-lg">
+          <div class="w-12 h-12 bg-gray-900 rounded-lg flex items-center justify-center mb-4">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+            </svg>
+          </div>
+          <h3 class="text-xl font-semibold text-gray-900 mb-2">Maquillaje de novia</h3>
+          <p class="text-gray-600">
+            El día más especial merece un maquillaje perfecto que perdure desde la ceremonia hasta el último baile.
+          </p>
+        </div>
+
+        <div class="bg-white p-6 rounded-lg">
+          <div class="w-12 h-12 bg-gray-900 rounded-lg flex items-center justify-center mb-4">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+          </div>
+          <h3 class="text-xl font-semibold text-gray-900 mb-2">Sesiones fotográficas</h3>
+          <p class="text-gray-600">
+            Maquillaje profesional diseñado específicamente para que luzcas impecable frente a la cámara.
+          </p>
+        </div>
+
+        <div class="bg-white p-6 rounded-lg">
+          <div class="w-12 h-12 bg-gray-900 rounded-lg flex items-center justify-center mb-4">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+            </svg>
+          </div>
+          <h3 class="text-xl font-semibold text-gray-900 mb-2">Eventos especiales</h3>
+          <p class="text-gray-600">
+            Para cualquier ocasión importante donde quieras lucir espectacular y sentirte segura.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Featured Projects Preview -->
+  <section class="py-16 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-7xl mx-auto">
+      <div class="text-center mb-12">
+        <h2 class="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
+          Trabajos recientes
+        </h2>
+        <p class="text-gray-600">
+          Descubre algunos de mis proyectos más destacados
+        </p>
+      </div>
+      <div class="text-center">
+        <p class="text-gray-500 mb-8">Próximamente: galería de proyectos</p>
+        <a
+          href="/proyectos"
+          class="inline-block text-gray-900 font-medium hover:text-gray-600 transition-colors"
+        >
+          Ver todos los proyectos →
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Contact CTA -->
+  <section id="contacto" class="py-16 px-4 sm:px-6 lg:px-8 bg-gray-900 text-white">
+    <div class="max-w-4xl mx-auto text-center">
+      <h2 class="text-3xl sm:text-4xl font-bold mb-6">
+        ¿Lista para lucir espectacular?
+      </h2>
+      <p class="text-xl text-gray-300 mb-8">
+        Cuéntame sobre tu evento y creemos juntas el look perfecto para ti
+      </p>
+      <a
+        href="#"
+        class="inline-block bg-white text-gray-900 px-8 py-4 rounded-lg font-medium hover:bg-gray-100 transition-colors"
+      >
+        Solicitar presupuesto
+      </a>
+    </div>
+  </section>
+</Layout>

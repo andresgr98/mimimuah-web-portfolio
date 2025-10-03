@@ -1,0 +1,136 @@
+---
+import { db } from '../lib/db';
+import { categories } from '../lib/db/schema';
+import { asc } from 'drizzle-orm';
+
+const { currentPath } = Astro.props;
+
+// Fetch categories for dropdown
+const allCategories = await db.select().from(categories).orderBy(asc(categories.order));
+---
+
+<nav class="fixed top-0 w-full bg-white/95 backdrop-blur-sm z-50 border-b border-gray-100">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex justify-between items-center h-16">
+      <a href="/" class="text-xl font-semibold text-gray-900">
+        Portfolio
+      </a>
+
+      <div class="hidden md:flex space-x-8">
+        <a
+          href="/"
+          class:list={[
+            "text-sm font-medium transition-colors",
+            currentPath === "/" ? "text-gray-900" : "text-gray-600 hover:text-gray-900"
+          ]}
+        >
+          Inicio
+        </a>
+
+        <!-- Portfolio Dropdown -->
+        <div class="relative portfolio-dropdown">
+          <button
+            class:list={[
+              "text-sm font-medium transition-colors flex items-center gap-1",
+              currentPath?.startsWith("/portfolio") || currentPath?.startsWith("/proyectos") ? "text-gray-900" : "text-gray-600 hover:text-gray-900"
+            ]}
+          >
+            Portfolio
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          <div class="absolute left-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 hidden portfolio-menu">
+            {allCategories.map((category) => (
+              <a
+                href={category.isProjectCategory ? "/proyectos" : `/portfolio/${category.slug}`}
+                class="block px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+              >
+                {category.name}
+              </a>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <!-- Mobile menu button -->
+      <button
+        id="mobile-menu-button"
+        class="md:hidden p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+        aria-label="Menú"
+      >
+        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Mobile menu -->
+  <div id="mobile-menu" class="hidden md:hidden border-t border-gray-100">
+    <div class="px-4 py-3 space-y-1">
+      <a
+        href="/"
+        class:list={[
+          "block px-3 py-2 rounded-md text-base font-medium",
+          currentPath === "/" ? "bg-gray-100 text-gray-900" : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+        ]}
+      >
+        Inicio
+      </a>
+
+      <!-- Mobile Portfolio Section -->
+      <div>
+        <button
+          id="mobile-portfolio-button"
+          class="w-full flex items-center justify-between px-3 py-2 rounded-md text-base font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+        >
+          Portfolio
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+        <div id="mobile-portfolio-menu" class="hidden pl-6 space-y-1 mt-1">
+          {allCategories.map((category) => (
+            <a
+              href={category.isProjectCategory ? "/proyectos" : `/portfolio/${category.slug}`}
+              class="block px-3 py-2 rounded-md text-sm text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+            >
+              {category.name}
+            </a>
+          ))}
+        </div>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<script>
+  // Mobile menu toggle
+  const mobileButton = document.getElementById('mobile-menu-button');
+  const mobileMenu = document.getElementById('mobile-menu');
+
+  mobileButton?.addEventListener('click', () => {
+    mobileMenu?.classList.toggle('hidden');
+  });
+
+  // Mobile portfolio submenu toggle
+  const mobilePortfolioButton = document.getElementById('mobile-portfolio-button');
+  const mobilePortfolioMenu = document.getElementById('mobile-portfolio-menu');
+
+  mobilePortfolioButton?.addEventListener('click', () => {
+    mobilePortfolioMenu?.classList.toggle('hidden');
+  });
+
+  // Desktop dropdown hover
+  const dropdown = document.querySelector('.portfolio-dropdown');
+  const dropdownMenu = dropdown?.querySelector('.portfolio-menu');
+
+  dropdown?.addEventListener('mouseenter', () => {
+    dropdownMenu?.classList.remove('hidden');
+  });
+
+  dropdown?.addEventListener('mouseleave', () => {
+    dropdownMenu?.classList.add('hidden');
+  });
+</script>

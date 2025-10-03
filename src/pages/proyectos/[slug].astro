@@ -1,0 +1,71 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { db } from '../../lib/db';
+import { projects, projectImages } from '../../lib/db/schema';
+import { eq, asc } from 'drizzle-orm';
+
+const { slug } = Astro.params;
+
+// Get project
+const project = await db.select().from(projects).where(eq(projects.slug, slug!)).get();
+
+if (!project) {
+  return Astro.redirect('/404');
+}
+
+// Get images for this project
+const images = await db
+  .select()
+  .from(projectImages)
+  .where(eq(projectImages.projectId, project.id))
+  .orderBy(asc(projectImages.order));
+---
+
+<Layout title={`${project.title} - Proyectos`}>
+  <main class="pt-24 pb-16 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-7xl mx-auto">
+      <!-- Back link -->
+      <a
+        href="/proyectos"
+        class="inline-flex items-center text-gray-600 hover:text-gray-900 mb-8 transition-colors"
+      >
+        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+        </svg>
+        Volver a proyectos
+      </a>
+
+      <!-- Project Header -->
+      <div class="mb-12">
+        <h1 class="text-4xl sm:text-5xl font-bold text-gray-900 mb-4">
+          {project.title}
+        </h1>
+        <p class="text-lg text-gray-600 max-w-3xl">
+          {project.description}
+        </p>
+      </div>
+
+      <!-- Image Gallery -->
+      {images.length > 0 ? (
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {images.map((image) => (
+            <div class="aspect-[3/4] overflow-hidden rounded-lg bg-gray-200">
+              <img
+                src={image.imagePath}
+                alt={`${project.title} - Imagen ${image.order + 1}`}
+                class="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                loading="lazy"
+              />
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div class="text-center py-20">
+          <p class="text-gray-500 text-lg">
+            Próximamente: galería del proyecto
+          </p>
+        </div>
+      )}
+    </div>
+  </main>
+</Layout>

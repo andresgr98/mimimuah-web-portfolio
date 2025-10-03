@@ -1,0 +1,58 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { db } from '../../lib/db';
+import { projects } from '../../lib/db/schema';
+import { desc } from 'drizzle-orm';
+
+// Get all projects
+const allProjects = await db.select().from(projects).orderBy(desc(projects.createdAt));
+---
+
+<Layout title="Proyectos - Portfolio">
+  <main class="pt-24 pb-16 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-7xl mx-auto">
+      <!-- Header -->
+      <div class="mb-12">
+        <h1 class="text-4xl sm:text-5xl font-bold text-gray-900 mb-4">
+          Proyectos
+        </h1>
+        <p class="text-lg text-gray-600">
+          Colección de trabajos especiales organizados por proyecto
+        </p>
+      </div>
+
+      <!-- Projects Grid -->
+      {allProjects.length > 0 ? (
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+          {allProjects.map((project) => (
+            <a
+              href={`/proyectos/${project.slug}`}
+              class="group block"
+            >
+              <div class="aspect-[4/5] overflow-hidden rounded-lg bg-gray-200 mb-4">
+                <img
+                  src={project.coverImagePath}
+                  alt={project.title}
+                  class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  loading="lazy"
+                />
+              </div>
+              <h3 class="text-xl font-semibold text-gray-900 group-hover:text-gray-600 transition-colors">
+                {project.title}
+              </h3>
+              <p class="text-gray-600 mt-1 line-clamp-2">
+                {project.description}
+              </p>
+            </a>
+          ))}
+        </div>
+      ) : (
+        <div class="text-center py-20">
+          <p class="text-gray-500 text-lg">
+            Próximamente: proyectos destacados
+          </p>
+        </div>
+      )}
+    </div>
+  </main>
+</Layout>
