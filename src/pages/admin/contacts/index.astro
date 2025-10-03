@@ -1,0 +1,113 @@
+---
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { db } from '../../../lib/db';
+import { contactRequests } from '../../../lib/db/schema';
+import { desc, eq } from 'drizzle-orm';
+
+// Handle status update
+if (Astro.request.method === 'POST') {
+  const formData = await Astro.request.formData();
+  const id = parseInt(formData.get('id') as string);
+  const status = formData.get('status') as string;
+
+  if (id && status) {
+    await db
+      .update(contactRequests)
+      .set({ status })
+      .where(eq(contactRequests.id, id));
+
+    return Astro.redirect('/admin/contacts');
+  }
+}
+
+// Get all contact requests
+const allRequests = await db
+  .select()
+  .from(contactRequests)
+  .orderBy(desc(contactRequests.createdAt))
+  .all();
+
+const statusConfig = {
+  pending: { label: 'Pendiente', color: 'bg-yellow-100 text-yellow-800' },
+  contacted: { label: 'Contactado', color: 'bg-blue-100 text-blue-800' },
+  completed: { label: 'Completado', color: 'bg-green-100 text-green-800' },
+  archived: { label: 'Archivado', color: 'bg-gray-100 text-gray-800' },
+};
+---
+
+<AdminLayout title="Contactos - Admin">
+  <div class="max-w-7xl">
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold mb-2">Solicitudes de contacto</h1>
+      <p class="text-gray-600">{allRequests.length} solicitud(es) total(es)</p>
+    </div>
+
+    {allRequests.length === 0 ? (
+      <div class="bg-white rounded-lg p-12 shadow-sm text-center">
+        <p class="text-gray-500">No hay solicitudes de contacto todavía</p>
+      </div>
+    ) : (
+      <div class="space-y-4">
+        {allRequests.map((request) => (
+          <div class="bg-white rounded-lg p-6 shadow-sm">
+            <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 mb-4">
+              <div class="flex-1">
+                <div class="flex items-start gap-3 mb-2">
+                  <h3 class="text-xl font-semibold">{request.name}</h3>
+                  <span class={`px-3 py-1 rounded-full text-sm ${statusConfig[request.status as keyof typeof statusConfig].color}`}>
+                    {statusConfig[request.status as keyof typeof statusConfig].label}
+                  </span>
+                </div>
+                <div class="space-y-1 text-sm text-gray-600">
+                  <p>
+                    <strong>Email:</strong>{' '}
+                    <a href={`mailto:${request.email}`} class="text-gray-900 hover:underline">
+                      {request.email}
+                    </a>
+                  </p>
+                  {request.phone && (
+                    <p>
+                      <strong>Teléfono:</strong>{' '}
+                      <a href={`tel:${request.phone}`} class="text-gray-900 hover:underline">
+                        {request.phone}
+                      </a>
+                    </p>
+                  )}
+                  <p>
+                    <strong>Fecha:</strong>{' '}
+                    {new Date(request.createdAt).toLocaleDateString('es-ES', {
+                      day: 'numeric',
+                      month: 'long',
+                      year: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}
+                  </p>
+                </div>
+              </div>
+
+              <form method="POST" class="flex gap-2">
+                <input type="hidden" name="id" value={request.id} />
+                <select
+                  name="status"
+                  class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-gray-900 focus:border-transparent outline-none"
+                  onchange="this.form.submit()"
+                >
+                  <option value="pending" selected={request.status === 'pending'}>Pendiente</option>
+                  <option value="contacted" selected={request.status === 'contacted'}>Contactado</option>
+                  <option value="completed" selected={request.status === 'completed'}>Completado</option>
+                  <option value="archived" selected={request.status === 'archived'}>Archivado</option>
+                </select>
+              </form>
+            </div>
+
+            <div class="border-t pt-4">
+              <p class="text-sm font-medium mb-2">Mensaje:</p>
+              <p class="text-gray-700 whitespace-pre-wrap">{request.message}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    )}
+  </div>
+</AdminLayout>

@@ -63,3 +63,16 @@ export const projectImages = sqliteTable("project_images", {
     .notNull()
     .default(sql`(unixepoch())`),
 });
+
+// Solicitudes de contacto del formulario público
+export const contactRequests = sqliteTable("contact_requests", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  name: text("name").notNull(),
+  email: text("email").notNull(),
+  phone: text("phone"),
+  message: text("message").notNull(),
+  status: text("status").notNull().default("pending"), // pending, contacted, completed, archived
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});

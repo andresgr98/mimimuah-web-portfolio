@@ -1,13 +1,23 @@
 ---
 import AdminLayout from '../../layouts/AdminLayout.astro';
 import { db } from '../../lib/db';
-import { categories, projects, categoryImages } from '../../lib/db/schema';
-import { count } from 'drizzle-orm';
+import { categories, projects, categoryImages, projectImages } from '../../lib/db/schema';
+import { eq } from 'drizzle-orm';
 
 // Get stats
-const [categoriesCount] = await db.select({ count: count() }).from(categories);
-const [projectsCount] = await db.select({ count: count() }).from(projects);
-const [imagesCount] = await db.select({ count: count() }).from(categoryImages);
+const allCategories = await db.select().from(categories).all();
+const allProjects = await db.select().from(projects).all();
+const allCategoryImages = await db.select().from(categoryImages).all();
+const allProjectImages = await db.select().from(projectImages).all();
+
+// Filter non-project categories for display
+const regularCategories = allCategories.filter(cat => !cat.isProjectCategory);
+
+const stats = {
+  categoriesCount: regularCategories.length,
+  projectsCount: allProjects.length,
+  totalImages: allCategoryImages.length + allProjectImages.length,
+};
 ---
 
 <AdminLayout title="Dashboard - Admin">
@@ -17,34 +27,35 @@ const [imagesCount] = await db.select({ count: count() }).from(categoryImages);
   <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
     <div class="bg-white rounded-lg p-6 shadow-sm">
       <div class="text-gray-600 text-sm mb-1">Categorías</div>
-      <div class="text-3xl font-bold">{categoriesCount.count}</div>
+      <div class="text-3xl font-bold">{stats.categoriesCount}</div>
+      <a href="/admin/categories" class="text-sm text-gray-600 hover:text-gray-900 mt-2 inline-block">
+        Ver todas →
+      </a>
     </div>
 
     <div class="bg-white rounded-lg p-6 shadow-sm">
       <div class="text-gray-600 text-sm mb-1">Proyectos</div>
-      <div class="text-3xl font-bold">{projectsCount.count}</div>
+      <div class="text-3xl font-bold">{stats.projectsCount}</div>
+      <a href="/admin/projects" class="text-sm text-gray-600 hover:text-gray-900 mt-2 inline-block">
+        Ver todos →
+      </a>
     </div>
 
     <div class="bg-white rounded-lg p-6 shadow-sm">
-      <div class="text-gray-600 text-sm mb-1">Imágenes</div>
-      <div class="text-3xl font-bold">{imagesCount.count}</div>
+      <div class="text-gray-600 text-sm mb-1">Imágenes totales</div>
+      <div class="text-3xl font-bold">{stats.totalImages}</div>
+      <p class="text-sm text-gray-500 mt-2">
+        En categorías y proyectos
+      </p>
     </div>
   </div>
 
   <!-- Quick actions -->
   <div class="bg-white rounded-lg p-6 shadow-sm">
     <h2 class="text-xl font-semibold mb-4">Acciones rápidas</h2>
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
       <a
-        href="/admin/categories/new"
-        class="p-4 border border-gray-200 rounded-lg hover:border-gray-900 transition-colors"
-      >
-        <h3 class="font-medium mb-1">Nueva categoría</h3>
-        <p class="text-sm text-gray-600">Crear una nueva categoría</p>
-      </a>
-
-      <a
-        href="/admin/projects/new"
+        href="/admin/projects/create"
         class="p-4 border border-gray-200 rounded-lg hover:border-gray-900 transition-colors"
       >
         <h3 class="font-medium mb-1">Nuevo proyecto</h3>
@@ -52,11 +63,11 @@ const [imagesCount] = await db.select({ count: count() }).from(categoryImages);
       </a>
 
       <a
-        href="/admin/images"
+        href="/admin/categories"
         class="p-4 border border-gray-200 rounded-lg hover:border-gray-900 transition-colors"
       >
-        <h3 class="font-medium mb-1">Subir imágenes</h3>
-        <p class="text-sm text-gray-600">Gestionar imágenes</p>
+        <h3 class="font-medium mb-1">Gestionar imágenes</h3>
+        <p class="text-sm text-gray-600">Subir y organizar fotos por categoría</p>
       </a>
     </div>
   </div>
