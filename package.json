@@ -18,6 +18,7 @@
     "astro": "^5.14.1",
     "better-sqlite3": "^12.4.1",
     "drizzle-orm": "^0.44.6",
+    "photoswipe": "^5.4.4",
     "tailwindcss": "^4.1.14"
   },
   "devDependencies": {

@@ -36,19 +36,33 @@ const images = await db
         </h1>
       </div>
 
-      <!-- Image Grid -->
+      <!-- Masonry Grid -->
       {images.length > 0 ? (
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {images.map((image) => (
-            <div class="aspect-[3/4] overflow-hidden rounded-lg bg-gray-200">
-              <img
-                src={image.imagePath}
-                alt={`${category.name} - Imagen ${image.order + 1}`}
-                class="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                loading="lazy"
-              />
-            </div>
-          ))}
+        <div class="columns-3 gap-2 sm:gap-6" id="gallery">
+          {images.map((image, index) => {
+            // Cada 5ta foto es más alta
+            const isTall = (index + 1) % 5 === 0;
+            return (
+              <a
+                href={image.imagePath}
+                target="_blank"
+                rel="noreferrer"
+                class="block mb-2 sm:mb-6 break-inside-avoid"
+              >
+                <div class:list={[
+                  "overflow-hidden rounded-lg bg-gray-200",
+                  isTall ? "aspect-[3/5]" : "aspect-[3/4]"
+                ]}>
+                  <img
+                    src={image.imagePath}
+                    alt={`${category.name} - Imagen ${image.order + 1}`}
+                    class="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                    loading="lazy"
+                  />
+                </div>
+              </a>
+            );
+          })}
         </div>
       ) : (
         <div class="text-center py-20">
@@ -60,3 +74,29 @@ const images = await db
     </div>
   </main>
 </Layout>
+
+<script>
+  import PhotoSwipeLightbox from 'photoswipe/lightbox';
+  import 'photoswipe/style.css';
+
+  const lightbox = new PhotoSwipeLightbox({
+    gallery: '#gallery',
+    children: 'a',
+    pswpModule: () => import('photoswipe'),
+  });
+
+  // Obtener dimensiones reales ANTES de abrir el lightbox
+  lightbox.addFilter('itemData', (itemData, index) => {
+    const element = itemData.element;
+    if (element) {
+      const img = element.querySelector('img');
+      if (img && img.naturalWidth) {
+        itemData.w = img.naturalWidth;
+        itemData.h = img.naturalHeight;
+      }
+    }
+    return itemData;
+  });
+
+  lightbox.init();
+</script>
