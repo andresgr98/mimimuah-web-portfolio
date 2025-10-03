@@ -39,10 +39,14 @@ export const categoryImages = sqliteTable("category_images", {
 // Proyectos (solo para la categoría "Proyectos")
 export const projects = sqliteTable("projects", {
   id: integer("id").primaryKey({ autoIncrement: true }),
+  categoryId: integer("category_id")
+    .notNull()
+    .references(() => categories.id, { onDelete: "cascade" }),
   slug: text("slug").notNull().unique(),
   title: text("title").notNull(),
-  description: text("description").notNull(),
-  coverImagePath: text("cover_image_path").notNull(), // ej: /images/projects/slug/cover.jpg
+  description: text("description"),
+  coverImagePath: text("cover_image_path"),
+  order: integer("order").notNull().default(0),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
     .default(sql`(unixepoch())`),

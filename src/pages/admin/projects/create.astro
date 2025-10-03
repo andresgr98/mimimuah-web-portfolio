@@ -3,7 +3,7 @@ import AdminLayout from '../../../layouts/AdminLayout.astro';
 import { db } from '../../../lib/db';
 import { projects, categories } from '../../../lib/db/schema';
 import { uploadAndOptimizeImage } from '../../../lib/upload';
-import { eq, asc } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 
 // Get project category
 const projectCategory = await db
@@ -35,14 +35,13 @@ if (Astro.request.method === 'POST') {
         error = 'Ya existe un proyecto con ese slug';
       } else {
         // Get max order
-        const maxOrderResult = await db
-          .select({ maxOrder: projects.order })
+        const allProjects = await db
+          .select({ order: projects.order })
           .from(projects)
-          .orderBy(asc(projects.order))
           .all();
 
-        const order = maxOrderResult.length > 0
-          ? Math.max(...maxOrderResult.map(r => r.maxOrder)) + 1
+        const order = allProjects.length > 0
+          ? Math.max(...allProjects.map(r => r.order)) + 1
           : 0;
 
         let coverImagePath: string | null = null;
